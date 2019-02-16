@@ -5,7 +5,7 @@ img = cv2.imread('./image.png', cv2.IMREAD_COLOR)
 
 hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
 
-lower = np.array([50, 50, 50])
+lower = np.array([40, 70, 70])
 upper = np.array([70, 255, 255])
 
 # Threshold to only get the color we want
