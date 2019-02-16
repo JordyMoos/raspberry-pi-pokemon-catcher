@@ -14,7 +14,6 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(servoPIN, GPIO.OUT)
 servo = GPIO.PWM(servoPIN, 50)
 servo.start(7.5) # "Neutral"
-servo.ChangeDutyCycle(5.0)
 
 # Camera
 camera = PiCamera()
@@ -29,19 +28,30 @@ lower = np.array([30, 70, 70])
 upper = np.array([70, 255, 255])
 
 
-for rgbFrame in camera.capture_continuous(rawCapture, format="rgb", use_video_port=True):
+for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
     key = cv2.waitKey(1) & 0xFF
     
     if key == ord("q"):
         print("Quit")
         break
     
-    hsvFrame = cv2.cvtColor(rgbFrame, cv2.COLOR_RGB2HSV)
+    hsvFrame = cv2.cvtColor(rgbFrame.array, cv2.COLOR_RGB2HSV)
     mask = cv2.inRange(hsvFrame, lower, upper)
     nonZeroPixels = cv2.countNonZero(mask)
     
+    '''
+    cv2.putText(mask, "%s" %(nonZeroPixels), (10, 20),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 2)
     cv2.imshow("mask", mask)
+    '''
 
+    rawCapture.truncate(0)
+    
+    if nonZeroPixels > 10000:
+        servo.ChangeDutyCycle(10.0)
+        time.sleep(0.2)
+        servo.ChangeDutyCycle(7.5)
+        time.sleep(3)
 
 p.stop()
 GPIO.cleanup()
