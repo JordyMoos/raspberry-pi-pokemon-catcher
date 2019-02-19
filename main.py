@@ -7,15 +7,20 @@ import cv2
 import RPi.GPIO as GPIO
 import time
 
-# Servo
-servoPIN = 18
+# GPIO Setup
 GPIO.setwarnings(False) # Do not tell anyone
 GPIO.setmode(GPIO.BCM)
+
+# Servo Pokeball
+servoPIN = 18
 GPIO.setup(servoPIN, GPIO.OUT)
 servo = GPIO.PWM(servoPIN, 50)
 servo.start(0.1) # "Neutral"
 time.sleep(0.1)
 servo.ChangeDutyCycle(0)
+
+# Reset button
+GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # Camera
 camera = PiCamera()
