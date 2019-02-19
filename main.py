@@ -13,12 +13,14 @@ GPIO.setwarnings(False) # Do not tell anyone
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(servoPIN, GPIO.OUT)
 servo = GPIO.PWM(servoPIN, 50)
-servo.start(7.5) # "Neutral"
+servo.start(0.1) # "Neutral"
+time.sleep(0.1)
+servo.ChangeDutyCycle(0)
 
 # Camera
 camera = PiCamera()
 camera.resolution = (640, 480)
-camera.framerate = 12
+camera.framerate = 6
 camera.hflip = True
 rawCapture = PiRGBArray(camera, size=(640, 480))
 time.sleep(1) # Camera needs some time for itself
@@ -48,9 +50,18 @@ for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_po
     rawCapture.truncate(0)
     
     if nonZeroPixels > 10000:
-        servo.ChangeDutyCycle(10.0)
-        time.sleep(0.2)
-        servo.ChangeDutyCycle(7.5)
+        # Turn servo on
+        servo.ChangeDutyCycle(0.1)
+        time.sleep(0.1)
+        # Activate the button
+        servo.ChangeDutyCycle(3.5)
+        time.sleep(0.4)
+        # Go back to the off position
+        servo.ChangeDutyCycle(0.1)
+        time.sleep(0.1)
+        # Turn servo off
+        servo.ChangeDutyCycle(0)
+        # Sleep so we do not keep hitting the button
         time.sleep(3)
 
 p.stop()
