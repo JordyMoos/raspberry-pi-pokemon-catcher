@@ -11,16 +11,25 @@ import time
 GPIO.setwarnings(False) # Do not tell anyone
 GPIO.setmode(GPIO.BCM)
 
-# Servo Pokeball
-servoPIN = 18
-GPIO.setup(servoPIN, GPIO.OUT)
-servo = GPIO.PWM(servoPIN, 50)
-servo.start(0.1) # "Neutral"
+# Pokeball Servo
+pokeballServoPin = 18
+GPIO.setup(pokeballServoPin, GPIO.OUT)
+pokeballServo = GPIO.PWM(pokeballServoPin, 50)
+pokeballServo.start(0.1) # "Neutral"
 time.sleep(0.1)
-servo.ChangeDutyCycle(0)
+pokeballServo.ChangeDutyCycle(0)
 
-# Reset button
-GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+# Pair button
+pairPIN = 27
+GPIO.setup(pairPIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+# Pair Servo
+pairServoPin = 17
+GPIO.setup(pairServoPin, GPIO.OUT)
+pairServo = GPIO.PWM(pairServoPin, 50)
+pairServo.start(0.1) # "Neutral"
+time.sleep(0.1)
+pairServo.ChangeDutyCycle(0)
 
 # Camera
 camera = PiCamera()
@@ -37,10 +46,14 @@ upper = np.array([70, 255, 255])
 
 for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
     key = cv2.waitKey(1) & 0xFF
-    
     if key == ord("q"):
         print("Quit")
         break
+    
+    pair_request = not GPIO.input(pairPIN)
+    if input_state == False:
+        print("Button Pressed")
+        time.sleep(0.2)
     
     hsvFrame = cv2.cvtColor(rgbFrame.array, cv2.COLOR_RGB2HSV)
     mask = cv2.inRange(hsvFrame, lower, upper)
@@ -56,16 +69,16 @@ for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_po
     
     if nonZeroPixels > 10000:
         # Turn servo on
-        servo.ChangeDutyCycle(0.1)
+        pokeballServo.ChangeDutyCycle(0.1)
         time.sleep(0.1)
         # Activate the button
-        servo.ChangeDutyCycle(3.5)
+        pokeballServo.ChangeDutyCycle(3.5)
         time.sleep(0.4)
         # Go back to the off position
-        servo.ChangeDutyCycle(0.1)
+        pokeballServo.ChangeDutyCycle(0.1)
         time.sleep(0.1)
         # Turn servo off
-        servo.ChangeDutyCycle(0)
+        pokeballServo.ChangeDutyCycle(0)
         # Sleep so we do not keep hitting the button
         time.sleep(3)
 
