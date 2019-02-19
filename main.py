@@ -7,6 +7,9 @@ import cv2
 import RPi.GPIO as GPIO
 import time
 
+# Config
+minimumPixels = 10000
+
 # GPIO Setup
 GPIO.setwarnings(False) # Do not tell anyone
 GPIO.setmode(GPIO.BCM)
@@ -40,9 +43,10 @@ rawCapture = PiRGBArray(camera, size=(640, 480))
 time.sleep(1) # Camera needs some time for itself
 
 # Image transformation
-lower = np.array([30, 70, 70])
-upper = np.array([70, 255, 255])
-
+blueLower = np.array([100, 70, 70])
+blueUpper = np.array([125, 255, 255])
+greenLower = np.array([30, 70, 70])
+greenUpper = np.array([70, 255, 255])
 
 for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
     key = cv2.waitKey(1) & 0xFF
@@ -51,13 +55,19 @@ for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_po
         break
     
     pair_request = not GPIO.input(pairPIN)
-    if input_state == False:
+    if pair_request == False:
         print("Button Pressed")
         time.sleep(0.2)
     
     hsvFrame = cv2.cvtColor(rgbFrame.array, cv2.COLOR_RGB2HSV)
-    mask = cv2.inRange(hsvFrame, lower, upper)
-    nonZeroPixels = cv2.countNonZero(mask)
+    
+    # Pokestop
+    blueMask = cv2.inRange(hsvFrame, blueLower, blueUpper)
+    blueCount = cv2.countNonZero(blueMask)
+    
+    # Pokemon
+    greenMask = cv2.inRange(hsvFrame, greenLower, greenUpper)
+    greenCount = cv2.countNonZero(greenMask)
     
     '''
     cv2.putText(mask, "%s" %(nonZeroPixels), (10, 20),
@@ -67,7 +77,12 @@ for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_po
 
     rawCapture.truncate(0)
     
-    if nonZeroPixels > 10000:
+    if blueCount > minimumPixels and blueCount > greenCount:
+        print("Pokestop")
+        time.sleep(2)
+    
+    elif greenCount > minimumPixels:
+        print("Pokemon")
         # Turn servo on
         pokeballServo.ChangeDutyCycle(0.1)
         time.sleep(0.1)
@@ -82,6 +97,7 @@ for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_po
         # Sleep so we do not keep hitting the button
         time.sleep(3)
 
-p.stop()
+pokeballServoPin.stop()
+pairServo.stop()
 GPIO.cleanup()
 cv2.destroyAllWindows()
