@@ -54,11 +54,6 @@ for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_po
         print("Quit")
         break
     
-    pair_request = not GPIO.input(pairPIN)
-    if pair_request == False:
-        print("Button Pressed")
-        time.sleep(0.2)
-    
     hsvFrame = cv2.cvtColor(rgbFrame.array, cv2.COLOR_RGB2HSV)
     
     # Pokestop
@@ -77,12 +72,16 @@ for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_po
 
     rawCapture.truncate(0)
     
-    if blueCount > minimumPixels and blueCount > greenCount:
-        print("Pokestop")
+    if GPIO.input(pairPIN) == False:
+        print("Button Pressed")
+        time.sleep(0.2)
+    
+    elif blueCount > minimumPixels and blueCount > greenCount:
+        print("Pokestop Blue={} Green=".format(blueCount, greenCount))
         time.sleep(2)
     
     elif greenCount > minimumPixels:
-        print("Pokemon")
+        print("Pokemon {}".format(greenCount))
         # Turn servo on
         pokeballServo.ChangeDutyCycle(0.1)
         time.sleep(0.1)
