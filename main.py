@@ -43,10 +43,24 @@ rawCapture = PiRGBArray(camera, size=(640, 480))
 time.sleep(1) # Camera needs some time for itself
 
 # Image transformation
-blueLower = np.array([100, 70, 70])
-blueUpper = np.array([125, 255, 255])
-greenLower = np.array([30, 70, 70])
+blueLower = np.array([10, 70, 70])
+blueUpper = np.array([30, 255, 255])
+greenLower = np.array([35, 70, 70])
 greenUpper = np.array([70, 255, 255])
+
+def trigger_servo(servo):
+    # Turn servo on
+    servo.ChangeDutyCycle(0.1)
+    time.sleep(0.1)
+    # Activate the button
+    servo.ChangeDutyCycle(3.5)
+    time.sleep(0.4)
+    # Go back to the off position
+    servo.ChangeDutyCycle(0.1)
+    time.sleep(0.1)
+    # Turn servo off
+    servo.ChangeDutyCycle(0)
+
 
 for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
     key = cv2.waitKey(1) & 0xFF
@@ -70,29 +84,28 @@ for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_po
     cv2.imshow("mask", mask)
     '''
 
+    #res = cv2.bitwise_and(rgbFrame.array, rgbFrame.array, mask = blueMask)
+    #cv2.imshow('rgbFrame', rgbFrame.array)
+    #cv2.imshow('blueMask', blueMask)
+    #cv2.imshow('greenMask', greenMask)
+    #cv2.imshow('res', res)
+    
     rawCapture.truncate(0)
     
     if GPIO.input(pairPIN) == False:
         print("Button Pressed")
-        time.sleep(0.2)
+        trigger_servo(pairServo)
+        time.sleep(1)
+        trigger_servo(pokeballServo)
+        time.sleep(1)
     
     elif blueCount > minimumPixels and blueCount > greenCount:
-        print("Pokestop Blue={} Green=".format(blueCount, greenCount))
+        print("Pokestop Blue={} Green={}".format(blueCount, greenCount))
         time.sleep(2)
     
     elif greenCount > minimumPixels:
         print("Pokemon {}".format(greenCount))
-        # Turn servo on
-        pokeballServo.ChangeDutyCycle(0.1)
-        time.sleep(0.1)
-        # Activate the button
-        pokeballServo.ChangeDutyCycle(3.5)
-        time.sleep(0.4)
-        # Go back to the off position
-        pokeballServo.ChangeDutyCycle(0.1)
-        time.sleep(0.1)
-        # Turn servo off
-        pokeballServo.ChangeDutyCycle(0)
+        trigger_servo(pokeballServo)
         # Sleep so we do not keep hitting the button
         time.sleep(3)
 
