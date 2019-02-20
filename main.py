@@ -14,6 +14,13 @@ minimumPixels = 10000
 GPIO.setwarnings(False) # Do not tell anyone
 GPIO.setmode(GPIO.BCM)
 
+# Pair Servo
+pairServoPin = 12
+GPIO.setup(pairServoPin, GPIO.OUT)
+pairServo = GPIO.PWM(pairServoPin, 50)
+pairServo.start(0.1) # "Neutral"
+pairServo.ChangeDutyCycle(0)
+
 # Pokeball Servo
 pokeballServoPin = 18
 GPIO.setup(pokeballServoPin, GPIO.OUT)
@@ -25,14 +32,6 @@ pokeballServo.ChangeDutyCycle(0)
 # Pair button
 pairPIN = 27
 GPIO.setup(pairPIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-# Pair Servo
-pairServoPin = 17
-GPIO.setup(pairServoPin, GPIO.OUT)
-pairServo = GPIO.PWM(pairServoPin, 50)
-pairServo.start(0.1) # "Neutral"
-time.sleep(0.1)
-pairServo.ChangeDutyCycle(0)
 
 # Camera
 camera = PiCamera()
@@ -48,19 +47,36 @@ blueUpper = np.array([30, 255, 255])
 greenLower = np.array([35, 70, 70])
 greenUpper = np.array([70, 255, 255])
 
-def trigger_servo(servo):
+
+lastInteraction = time.time() - 1000000
+
+
+def trigger_pokeball():
     # Turn servo on
-    servo.ChangeDutyCycle(0.1)
+    pokeballServo.ChangeDutyCycle(0.1)
     time.sleep(0.1)
     # Activate the button
-    servo.ChangeDutyCycle(3.5)
-    time.sleep(0.4)
+    pokeballServo.ChangeDutyCycle(3.5)
+    time.sleep(0.2)
     # Go back to the off position
-    servo.ChangeDutyCycle(0.1)
+    pokeballServo.ChangeDutyCycle(0.1)
     time.sleep(0.1)
     # Turn servo off
-    servo.ChangeDutyCycle(0)
+    pokeballServo.ChangeDutyCycle(0)
 
+
+def trigger_pair():
+    # Turn servo on
+    pairServo.ChangeDutyCycle(0.1)
+    time.sleep(0.1)
+    # Activate the button
+    pairServo.ChangeDutyCycle(3.5)
+    time.sleep(0.2)
+    # Go back to the off position
+    pairServo.ChangeDutyCycle(0.1)
+    time.sleep(0.1)
+    # Turn servo off
+    pairServo.ChangeDutyCycle(0)
 
 for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
     key = cv2.waitKey(1) & 0xFF
@@ -94,20 +110,27 @@ for rgbFrame in camera.capture_continuous(rawCapture, format="bgr", use_video_po
     
     if GPIO.input(pairPIN) == False:
         print("Button Pressed")
-        trigger_servo(pairServo)
-        time.sleep(1)
-        trigger_servo(pokeballServo)
+        trigger_pair()
+        trigger_pokeball()
         time.sleep(1)
     
     elif blueCount > minimumPixels and blueCount > greenCount:
-        print("Pokestop Blue={} Green={}".format(blueCount, greenCount))
+        lastInteraction = time.time()
         time.sleep(2)
     
     elif greenCount > minimumPixels:
-        print("Pokemon {}".format(greenCount))
-        trigger_servo(pokeballServo)
+        lastInteraction = time.time()
+        trigger_pokeball()
         # Sleep so we do not keep hitting the button
         time.sleep(3)
+    
+    elif lastInteraction < time.time() - 420:
+        trigger_pair()
+        trigger_pokeball()
+        lastInteraction = time.time() - 400
+        time.sleep(5)
+
+
 
 pokeballServoPin.stop()
 pairServo.stop()
